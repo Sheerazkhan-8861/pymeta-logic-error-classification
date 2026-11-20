@@ -2,8 +2,13 @@
 """CPU-only unit tests for PyMETA cascade metrics and deterministic selection."""
 
 import json
+import sys
+from pathlib import Path
 
-from pymeta_hierarchical_cascade_evaluator import (
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.pymeta_hierarchical_cascade_evaluator import (
     THREE_CLASSES,
     compute_three_class_metrics,
     select_best_pair,

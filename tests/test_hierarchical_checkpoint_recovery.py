@@ -10,8 +10,12 @@ from pathlib import Path
 import numpy as np
 import torch
 
-import pymeta_hierarchical_training_engine as engine
+import sys
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts import pymeta_hierarchical_training_engine as engine
 
 def create_fake_checkpoint(directory, stage, train_hash, validation_hash, format_version=3):
     directory.mkdir(parents=True, exist_ok=True)
