@@ -1,0 +1,114 @@
+{
+  "project": "PyMETA",
+  "experiment": "Explicit-Error-Aware Hierarchical Classification",
+  "version": 1,
+  "status": "PREPARATION",
+  "base_model": {
+    "model_id": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "revision": "c03e6d358207e414f1eca0bb1891e29f1db0e242",
+    "local_path": "model_cache/Qwen2.5-Coder-7B-Instruct",
+    "initial_adapter": "checkpoints/initial_adapter",
+    "initialization": "Both stages independently start from the same initial adapter."
+  },
+  "hardware": {
+    "gpu": "NVIDIA RTX 4000 Ada Generation",
+    "vram_mib": 20475
+  },
+  "training": {
+    "epochs": 2,
+    "gradient_accumulation": 16,
+    "max_sequence_length": 1536,
+    "max_new_tokens": 16,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.01,
+    "max_gradient_norm": 1.0,
+    "warmup_ratio": 0.03,
+    "scheduler": "cosine",
+    "optimizer": "PagedAdamW8bit",
+    "quantization": "4-bit NF4 with double quantization",
+    "compute_dtype": "float16",
+    "seed": 42,
+    "overflow_retry_limit": 5,
+    "checkpoint_interval": 250,
+    "loss": "Assistant-only causal language-model loss"
+  },
+  "lora": {
+    "rank": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "bias": "none",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "stage1": {
+    "task": "Explicit Error versus Non-Explicit",
+    "labels": ["Explicit Error", "Non-Explicit"],
+    "train_file": "data/hierarchical_stage1_train.json",
+    "validation_file": "data/hierarchical_stage1_validation.json",
+    "train_rows": 38918,
+    "validation_rows": 4863,
+    "train_sha256": "6b52a0d69a5018388d91b1991c05ce652602ea954cbd7c7575480ac10eb7ffe0",
+    "validation_sha256": "c1d9cfbccf7ec83ece36b5932ace2a5e02e97fc0408df3029d69ceb99c280c27",
+    "train_counts": {
+      "Explicit Error": 11017,
+      "Non-Explicit": 27901
+    },
+    "validation_counts": {
+      "Explicit Error": 1493,
+      "Non-Explicit": 3370
+    },
+    "steps_per_epoch": 2433,
+    "total_steps": 4866,
+    "warmup_steps": 146,
+    "output_dir": "checkpoints/hierarchical_stage1"
+  },
+  "stage2": {
+    "task": "Logic Error versus No Error, conditional on Stage 1 Non-Explicit",
+    "labels": ["Logic Error", "No Error"],
+    "train_file": "data/hierarchical_stage2_train.json",
+    "validation_file": "data/hierarchical_stage2_validation.json",
+    "train_rows": 27901,
+    "validation_rows": 3370,
+    "train_sha256": "16080b67b459a378d47028c39190a94779457d56fcd3c96f0798caf2b764280a",
+    "validation_sha256": "8bc82eed5743fb3cba64d91d07ee31921fcf315c0a8600a44defdcfc092a8906",
+    "train_counts": {
+      "Logic Error": 8079,
+      "No Error": 19822
+    },
+    "validation_counts": {
+      "Logic Error": 1495,
+      "No Error": 1875
+    },
+    "steps_per_epoch": 1744,
+    "total_steps": 3488,
+    "warmup_steps": 105,
+    "output_dir": "checkpoints/hierarchical_stage2"
+  },
+  "cascade_selection": {
+    "validation_file": "data/flat_validation.json",
+    "candidate_combinations": 4,
+    "primary_metric": "three_class_macro_f1",
+    "tie_breakers": [
+      "lower_LER_over",
+      "higher_logic_error_recall",
+      "earlier_deterministic_pair"
+    ],
+    "test_data_access_allowed": false
+  },
+  "reproducibility": {
+    "flat_baseline_must_remain_unchanged": true,
+    "official_question_id_split_only": true,
+    "random_split_prohibited": true,
+    "test_data_during_training_or_selection": false,
+    "stage2_initialization_from_stage1_prohibited": true,
+    "strict_json_output": true,
+    "invalid_predictions_count_as_errors": true
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "specification_id": "PYMETA_CUSTOM_TRAINING_LOOP_V1",
+  "status": "IMPLEMENTATION_CONTRACT",
+  "frozen_config_sha256": "33d374c03ff32634405f604e7f0a9d7abff9eb037f9260d563e8c227ba2c272c",
+  "training": {
+    "epochs": 2,
+    "training_examples": 38918,
+    "batch_size": 1,
+    "gradient_accumulation": 16,
+    "full_groups_per_epoch": 2432,
+    "final_partial_group_size": 6,
+    "optimizer_steps_per_epoch": 2433,
+    "total_planned_successful_updates": 4866,
+    "partial_group_normalization": "actual_group_size",
+    "shuffle": true,
+    "data_seed": 42
+  },
+  "precision": {
+    "autocast": "float16",
+    "grad_scaler": true,
+    "initial_scale": 65536.0,
+    "unscale_before_clipping": true,
+    "clip_grad_norm": 1.0,
+    "scheduler_only_after_successful_optimizer_update": true
+  },
+  "optimizer": {
+    "type": "PagedAdamW8bit",
+    "learning_rate": 0.0002,
+    "weight_decay": 0.01,
+    "scheduler": "cosine",
+    "warmup_steps": 146,
+    "total_scheduler_steps": 4866
+  },
+  "validation": {
+    "dataset": "official_validation_only",
+    "frequency": "after_each_epoch",
+    "prediction": "autoregressive_greedy",
+    "max_new_tokens": 16,
+    "strict_json": true,
+    "retry_invalid_outputs": false,
+    "auto_repair": false,
+    "test_access": false
+  },
+  "metrics": {
+    "primary": "macro_f1",
+    "secondary": "lower_LER_over",
+    "tertiary": "higher_logic_error_recall",
+    "invalid_output_rate": "reported_separately",
+    "invalid_prediction_policy": "false_negative_for_gold_class_no_valid_predicted_class",
+    "class_order": [
+      "No Error",
+      "Logic Error",
+      "Explicit Error"
+    ]
+  },
+  "checkpointing": {
+    "save_interval_successful_updates": 250,
+    "save_at_epoch_end": true,
+    "preserve_best_checkpoint": true,
+    "save_adapter": true,
+    "save_tokenizer": true,
+    "save_optimizer": true,
+    "save_scheduler": true,
+    "save_grad_scaler": true,
+    "save_rng_states": true,
+    "save_epoch_permutation": true,
+    "save_next_microbatch_position": true,
+    "save_training_history": true,
+    "save_skipped_update_count": true,
+    "save_config_and_data_hashes": true
+  },
+  "recovery": {
+    "resume_exact_epoch_order": true,
+    "resume_exact_microbatch_position": true,
+    "restore_optimizer_scheduler_scaler": true,
+    "restore_rng_states": true,
+    "verify_config_hash_before_resume": true,
+    "verify_data_hashes_before_resume": true
+  },
+  "implementation_constraints": [
+    "Do not access test records.",
+    "Do not change the frozen experiment configuration.",
+    "Do not change the official QuestionID split.",
+    "Do not clean or repair student code.",
+    "Do not silently count skipped optimizer updates as successful updates.",
+    "Do not select checkpoints using rounded metrics.",
+    "Do not overwrite the best checkpoint with a worse checkpoint.",
+    "Do not use teacher-forced predictions for primary classification metrics."
+  ]
+}

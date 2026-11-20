@@ -1,0 +1,77 @@
+{
+  "amendment_id": "PyMETA-Training-Loop-V1.1",
+  "step": "12.25",
+  "title": "Overflow Retry and Exact Accumulation-Group Preservation",
+  "status": "approved_implementation_policy",
+  "source_specification": {
+    "file": "training_loop_implementation_spec_v1.json",
+    "sha256": "945ccbf8f8f2798e151a5aab13760e062c47c425f797f11ba7aa3221bb1202d1"
+  },
+  "scope": {
+    "changes_frozen_experiment_configuration": false,
+    "changes_model_hyperparameters": false,
+    "changes_dataset_split": false,
+    "changes_training_data_order": false,
+    "changes_validation_protocol": false,
+    "changes_test_protocol": false
+  },
+  "policy": {
+    "objective": "Preserve every accumulation group and the planned number of successful optimizer updates when GradScaler detects overflow.",
+    "before_each_group": [
+      "Record the exact accumulation-group indices.",
+      "Record the current epoch and next microbatch position.",
+      "Snapshot Python random state.",
+      "Snapshot NumPy random state.",
+      "Snapshot PyTorch CPU RNG state.",
+      "Snapshot all available PyTorch CUDA RNG states."
+    ],
+    "normal_attempt": [
+      "Process the same accumulation group in its defined order.",
+      "Divide each microbatch loss by the actual group size.",
+      "Perform scaled backward passes.",
+      "Unscale gradients before checking finiteness.",
+      "If gradients are finite, clip gradients to max_norm 1.0.",
+      "Record the GradScaler scale before optimizer stepping.",
+      "Call scaler.step(optimizer).",
+      "Call scaler.update().",
+      "Compare the new scale with the previous scale."
+    ],
+    "successful_update": [
+      "Treat the attempt as successful when the GradScaler scale does not decrease.",
+      "Advance the scheduler exactly once.",
+      "Increment successful_optimizer_updates exactly once.",
+      "Advance the training position beyond the completed group.",
+      "Clear gradients before the next group."
+    ],
+    "overflow_retry": [
+      "Treat a decreased GradScaler scale as a skipped optimizer update.",
+      "Do not advance the scheduler.",
+      "Do not increment successful_optimizer_updates.",
+      "Increment skipped_overflow_attempts.",
+      "Clear all accumulated gradients.",
+      "Restore the exact pre-group Python, NumPy, PyTorch CPU, and CUDA RNG states.",
+      "Retry the identical accumulation group with the reduced scale.",
+      "Do not advance the epoch or microbatch position until success."
+    ],
+    "retry_limit": {
+      "max_overflow_retries_per_group": 5,
+      "on_limit": "Abort safely with an explicit error and preserve the last verified recovery checkpoint. Never silently discard the group."
+    },
+    "partial_group": "The final group of six examples follows the same retry policy. Its loss normalization remains division by six.",
+    "checkpointing": "Do not create a normal progress checkpoint between an overflow skip and its immediate retry. If execution is interrupted, resume from the last successful checkpoint and replay work as required."
+  },
+  "invariants": {
+    "planned_successful_updates_per_epoch": 2433,
+    "planned_successful_updates_total": 4866,
+    "scheduler_steps_equal_successful_optimizer_updates": true,
+    "every_training_group_must_eventually_succeed": true,
+    "no_group_may_be_silently_discarded": true,
+    "test_records_accessed": false
+  },
+  "implementation_notes": [
+    "The GradScaler scale comparison is used to detect overflow skips: a decreased scale indicates a skipped optimizer update.",
+    "A successful update may leave the scale unchanged or increase it.",
+    "RNG restoration reproduces the stochastic random-state inputs for the retry; it does not guarantee bitwise-identical CUDA execution when nondeterministic kernels are present.",
+    "The retry limit is an operational safety guard, not a model hyperparameter or a change to the research experiment."
+  ]
+}

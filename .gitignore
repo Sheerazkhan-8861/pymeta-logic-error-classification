@@ -1,0 +1,54 @@
+# Virtual environments and Python cache
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local model and training artifacts
+model_cache/
+checkpoints/
+tokenizer/
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.incomplete
+
+# Dataset and generated prediction files
+data/
+outputs/
+logs/
+*.csv
+*.parquet
+*.jsonl
+
+# Local backups
+backups/
+*.bak
+*.backup*
+*.before_fix
+
+# Credentials and local secrets
+gdrive_oauth.json
+.env
+.env.*
+*credentials*
+*secret*
+*token*
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Internal audit records and machine-specific provenance
+audits/
+config/training_config_frozen.json
+config/training_configuration_freeze_manifest.json
+research_records/Environment_and_Reproducibility_Record.md
+research_records/Official_Test_Dataset_Provenance_Record.md
+research_records/Official_Test_Dataset_Provenance_Record.md.sha256
+research_records/Training_Completion_SHA256_Manifest.txt
+research_records/Training_Completion_SHA256_Manifest.txt.sha256
